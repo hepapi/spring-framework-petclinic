@@ -60,7 +60,7 @@ class BadCodeExamplesController {
 	 * CODE SMELL: Boş catch bloğu.
 	 * Hatalar yakalandığında görmezden gelinmemelidir. En azından loglanmalıdır.
 	 */
-	public void doSomething risky() {
+	public void doSomethingRisky() { // <-- BU SATIR DÜZELTİLDİ
 		try {
 			// Riskli bir işlem yapılıyor...
 			throw new UnsupportedOperationException();
