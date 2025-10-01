@@ -7,7 +7,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-
+import org.springframework.samples.petclinic.model.Owner;
 /**
  * Bu sınıf, SonarQube Quality Gate'ini test etmek için kasıtlı olarak
  * kötü kod pratikleri içermektedir.
@@ -60,7 +60,7 @@ class BadCodeExamplesController {
 	 * CODE SMELL: Boş catch bloğu.
 	 * Hatalar yakalandığında görmezden gelinmemelidir. En azından loglanmalıdır.
 	 */
-	public void doSomethingRisky() { // <-- BU SATIR DÜZELTİLDİ
+	public void doSomethingRisky() {
 		try {
 			// Riskli bir işlem yapılıyor...
 			throw new UnsupportedOperationException();
