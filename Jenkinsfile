@@ -40,7 +40,8 @@ spec:
 
   environment {
     IMAGE_NAME = "spring-petclinic"
-    REGISTRY   = "nexus.hepapi.com/repository/docker-hosted"
+    REGISTRY   = "nexus.hepapi.com"
+    REPO_PATH  = "repository/docker-hosted"
   }
 
   stages {
@@ -78,11 +79,9 @@ spec:
         container('builder') {
           withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
             sh '''
-
-
-              echo "${PASS}" | docker login http://${REGISTRY} -u "${USER}" --password-stdin
-              docker build -t ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
-              docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+              echo "${PASS}" | docker login ${REGISTRY} -u "${USER}" --password-stdin
+              docker build -t ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
+              docker push ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG}
             '''
           }
         }
@@ -92,7 +91,7 @@ spec:
 
   post {
     success {
-      echo "✅ Image başarıyla Nexus'a pushlandı: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+      echo "✅ Image başarıyla Nexus'a pushlandı: ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG}"
     }
     failure {
       echo "❌ Pipeline hata verdi."
