@@ -1,25 +1,17 @@
-# burada gradle ve jdk17 kullanarak build aşaması başlatıyoruz
-FROM gradle:7.6.2-jdk17 AS build  
+# Maven + JDK17 ile build aşaması
+FROM maven:3.9.9-eclipse-temurin-17 AS build
 
-# çalışma dizinini /app olarak ayarlıyoruz
-WORKDIR /app  
+WORKDIR /app
+COPY . .
 
-# mevcut dizindeki tüm dosyaları konteynıra kopyalıyoruz
-COPY . .  
+# Maven ile build (testleri atlıyoruz)
+RUN mvn clean package -DskipTests
+RUN ls -la /app/target
 
-# gradle ile build işlemini yapıyoruz, testleri dışarıda bırakıyoruz
-RUN gradle build -x test  
-RUN ls -la /app/build/libs
+# Çalışma imajı
+FROM openjdk:17-jdk-slim
 
-# ikinci aşama için daha hafif olan openjdk 17 slim imajını kullanıyoruz
-FROM openjdk:17-jdk-slim  
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 
-# tekrar çalışma dizinini /app olarak ayarlıyoruz
-WORKDIR /app  
-
-
-# build aşamasından jar dosyasını kopyalıyoruz
-COPY --from=build /app/build/libs/spring-petclinic-3.2.0.jar app.jar
-
-# son olarak app.jar dosyasını çalıştırıyoruz
-CMD ["java", "-jar", "app.jar"]  
+CMD ["java", "-jar", "app.jar"]
