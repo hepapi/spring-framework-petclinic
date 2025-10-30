@@ -9,11 +9,6 @@ pipeline {
 
   stages {
 
-    stage('Checkout') {
-      steps {
-        git branch: 'main', url: 'https://github.com/hepapi/spring-framework-petclinic.git'
-      }
-    }
 
     stage('Build JAR') {
       steps {
