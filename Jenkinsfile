@@ -11,10 +11,13 @@ spec:
   containers:
     - name: kaniko
       image: gcr.io/kaniko-project/executor:latest
+      command:
+        - cat
       tty: true
       volumeMounts:
         - name: kaniko-secret
           mountPath: /kaniko/.docker/
+          readOnly: false
   volumes:
     - name: kaniko-secret
       emptyDir: {}
@@ -59,10 +62,10 @@ spec:
           withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
             sh """
               mkdir -p /kaniko/.docker
-              echo "{\"auths\":{\"${REGISTRY}\":{\"username\":\"$USER\",\"password\":\"$PASS\"}}}" > /kaniko/.docker/config.json
+              echo '{"auths":{"${REGISTRY}":{"username":"$USER","password":"$PASS"}}}' > /kaniko/.docker/config.json
 
               /kaniko/executor \
-                --context $PWD \
+                --context ${PWD} \
                 --dockerfile ${PWD}/Dockerfile \
                 --destination ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} \
                 --skip-tls-verify \
