@@ -14,21 +14,26 @@ spec:
       securityContext:
         privileged: true
       args:
+        - --host=tcp://0.0.0.0:2375
         - --insecure-registry=my-nexus-repository-manager.nexus.svc.cluster.local:8082
+      volumeMounts:
+        - name: docker-storage
+          mountPath: /var/lib/docker
     - name: builder
       image: docker:27-cli
-      command:
-        - cat
       tty: true
+      env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
       volumeMounts:
-        - name: docker-sock
-          mountPath: /var/run
-        - name: docker-config
-          mountPath: /root/.docker
+        - name: docker-storage
+          mountPath: /var/lib/docker
+        - name: workspace-volume
+          mountPath: /home/jenkins/agent
   volumes:
-    - name: docker-sock
+    - name: docker-storage
       emptyDir: {}
-    - name: docker-config
+    - name: workspace-volume
       emptyDir: {}
 """
     }
