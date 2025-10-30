@@ -79,8 +79,13 @@ spec:
         container('builder') {
           withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
             sh '''
-              echo "${PASS}" | docker login ${REGISTRY} -u "${USER}" --password-stdin
+              echo "🔐 Nexus login..."
+              echo "${PASS}" | docker login https://${REGISTRY} -u "${USER}" --password-stdin
+              
+              echo "📦 Building image..."
               docker build -t ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
+
+              echo "🚀 Pushing image..."
               docker push ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG}
             '''
           }
@@ -91,7 +96,7 @@ spec:
 
   post {
     success {
-      echo "✅ Image başarıyla Nexus'a pushlandı: ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG}"
+      echo "✅ Image başarıyla pushlandı: ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG}"
     }
     failure {
       echo "❌ Pipeline hata verdi."
