@@ -39,9 +39,9 @@ spec:
   }
 
   environment {
-    IMAGE_NAME = "spring-petclinic"
     REGISTRY   = "nexus.hepapi.com"
     REPO_PATH  = "repository/docker-hosted"
+    IMAGE_NAME = "spring-petclinic"
   }
 
   stages {
@@ -49,18 +49,6 @@ spec:
       steps {
         container('builder') {
           git branch: 'main', url: 'https://github.com/hepapi/spring-framework-petclinic.git'
-        }
-      }
-    }
-
-    stage('Set IMAGE_TAG') {
-      steps {
-        container('builder') {
-          script {
-            sh 'git config --global --add safe.directory /home/jenkins/agent/workspace/cicd-pipeline'
-            IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-            echo "📦 IMAGE_TAG = ${IMAGE_TAG}"
-          }
         }
       }
     }
@@ -80,13 +68,14 @@ spec:
           withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
             sh '''
               echo "🔐 Nexus login..."
-              echo "${PASS}" | docker login https://${REGISTRY} -u "${USER}" --password-stdin
-              
-              echo "📦 Building image..."
-              docker build -t ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
+              echo "$PASS" | docker login https://$REGISTRY -u "$USER" --password-stdin
+
+              IMAGE_TAG=$(git rev-parse --short HEAD)
+              echo "📦 Building image $IMAGE_TAG"
+              docker build -t $REGISTRY/$REPO_PATH/$IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
 
               echo "🚀 Pushing image..."
-              docker push ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG}
+              docker push $REGISTRY/$REPO_PATH/$IMAGE_NAME:$IMAGE_TAG
             '''
           }
         }
@@ -96,7 +85,7 @@ spec:
 
   post {
     success {
-      echo "✅ Image başarıyla pushlandı: ${REGISTRY}/${REPO_PATH}/${IMAGE_NAME}:${IMAGE_TAG}"
+      echo "✅ Image başarıyla pushlandı!"
     }
     failure {
       echo "❌ Pipeline hata verdi."
