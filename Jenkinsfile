@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "spring-petclinic"
         IMAGE_TAG  = "latest"
-        REGISTRY   = "https://nexus.hepapi.com/repository/nexusimagerepository/"   // kendi Nexus Docker registry adresin
+        REGISTRY   = "nexus.hepapi.com/repository/nexusimagerepository"   // kendi Nexus Docker registry adresin
     }
 
     stages {
