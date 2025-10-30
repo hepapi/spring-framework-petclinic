@@ -15,7 +15,6 @@ spec:
         privileged: true
       args:
         - --host=tcp://0.0.0.0:2375
-        - --insecure-registry=my-nexus-repository-manager.nexus.svc.cluster.local:8082
       volumeMounts:
         - name: docker-storage
           mountPath: /var/lib/docker
@@ -41,7 +40,7 @@ spec:
 
   environment {
     IMAGE_NAME = "spring-petclinic"
-    REGISTRY   = "https://nexus.hepapi.com/repository/docker-hosted"
+    REGISTRY   = "nexus.hepapi.com/repository/docker-hosted"
   }
 
   stages {
@@ -79,7 +78,7 @@ spec:
         container('builder') {
           withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
             sh '''
-              echo "${PASS}" | docker login ${REGISTRY} -u "${USER}" --password-stdin
+              echo "${PASS}" | docker login https://${REGISTRY} -u "${USER}" --password-stdin
               docker build -t ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
               docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
             '''
