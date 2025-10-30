@@ -1,50 +1,88 @@
 pipeline {
-    agent any
+  agent {
+    kubernetes {
+      yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kaniko-build-pod
+spec:
+  serviceAccountName: jenkins
+  containers:
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:latest
+      command:
+        - cat
+      tty: true
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /kaniko/.docker/
+  volumes:
+    - name: kaniko-secret
+      emptyDir: {}
+"""
+    }
+  }
 
-    environment {
-        IMAGE_NAME = "spring-petclinic"
-        IMAGE_TAG  = "latest"
-        REGISTRY   = "nexus.hepapi.com/repository/nexusimagerepository"   // kendi Nexus Docker registry adresin
+  environment {
+    IMAGE_NAME = "spring-petclinic"
+    REGISTRY   = "nexus.hepapi.com/repository/nexusimagerepository"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        container('kaniko') {
+          git branch: 'main', url: 'https://github.com/hepapi/spring-framework-petclinic.git'
+        }
+      }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/hepapi/spring-framework-petclinic.git'
-            }
+    stage('Set IMAGE_TAG') {
+      steps {
+        script {
+          // kısa git commit hash al
+          IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+          echo "📦 IMAGE_TAG = ${IMAGE_TAG}"
         }
-
-        stage('Build JAR') {
-            steps {
-                sh './mvnw clean package -DskipTests'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
-            }
-        }
-
-        stage('Push to Nexus') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh """
-                      echo "$PASS" | docker login ${REGISTRY} -u "$USER" --password-stdin
-                      docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                      docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                    """
-                }
-            }
-        }
+      }
     }
 
-    post {
-        success {
-            echo "✅ Image başarıyla Nexus'a pushlandı."
+    stage('Build JAR') {
+      steps {
+        container('kaniko') {
+          sh './mvnw clean package -DskipTests'
         }
-        failure {
-            echo "❌ Pipeline hata verdi."
-        }
+      }
     }
+
+    stage('Build & Push Image (Kaniko)') {
+      steps {
+        container('kaniko') {
+          withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+            sh """
+              mkdir -p /kaniko/.docker
+              echo "{\"auths\":{\"${REGISTRY}\":{\"username\":\"$USER\",\"password\":\"$PASS\"}}}" > /kaniko/.docker/config.json
+
+              /kaniko/executor \
+                --context $PWD \
+                --dockerfile Dockerfile \
+                --destination ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} \
+                --skip-tls-verify \
+                --reproducible
+            """
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ Image başarıyla Nexus'a pushlandı: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+    }
+    failure {
+      echo "❌ Pipeline hata verdi."
+    }
+  }
 }
