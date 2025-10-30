@@ -35,7 +35,7 @@ spec:
 
   environment {
     IMAGE_NAME = "spring-petclinic"
-    REGISTRY   = "nexus.hepapi.com/repository/nexusimagerepository"
+    REGISTRY   = "my-nexus-repository-manager.nexus.svc.cluster.local:8082"
   }
 
   stages {
