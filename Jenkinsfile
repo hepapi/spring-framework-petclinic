@@ -1,38 +1,69 @@
 pipeline {
-  agent any
+  agent {
+    kubernetes {
+      yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  name: docker-temp-build
+spec:
+  serviceAccountName: jenkins
+  containers:
+    - name: builder
+      image: ubuntu:22.04
+      tty: true
+      command:
+        - cat
+      volumeMounts:
+        - name: workspace-volume
+          mountPath: /home/jenkins/agent
+  volumes:
+    - name: workspace-volume
+      emptyDir: {}
+"""
+    }
+  }
 
   environment {
-    REGISTRY = "my-nexus-repository-manager.nexus.svc.cluster.local:8082"
     IMAGE_NAME = "spring-petclinic"
     IMAGE_TAG = "latest"
   }
 
   stages {
-
-
-    stage('Build JAR') {
+    stage('Setup Docker') {
       steps {
-        sh '''
-          echo "🔧 Building Maven project..."
-          apt-get update -qq
-          apt-get install -y -qq openjdk-17-jdk maven
-          ./mvnw clean package -DskipTests
-        '''
+        container('builder') {
+          sh '''
+            apt-get update -qq
+            apt-get install -y -qq ca-certificates curl gnupg lsb-release
+            mkdir -p /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+            apt-get update -qq
+            apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          '''
+        }
       }
     }
 
-    stage('Build & Push Docker Image') {
+    stage('Build JAR') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'nexus-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+        container('builder') {
           sh '''
-            echo "🔐 Logging into Nexus..."
-            echo "$PASS" | docker login http://$REGISTRY -u "$USER" --password-stdin
+            apt-get install -y openjdk-17-jdk maven
+            ./mvnw clean package -DskipTests
+          '''
+        }
+      }
+    }
 
+    stage('Build Docker Image') {
+      steps {
+        container('builder') {
+          sh '''
             echo "📦 Building Docker image..."
-            docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-
-            echo "🚀 Pushing image to Nexus..."
-            docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+            docker image ls | grep ${IMAGE_NAME}
           '''
         }
       }
@@ -41,7 +72,7 @@ pipeline {
 
   post {
     success {
-      echo "✅ Image başarıyla pushlandı: $REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+      echo "✅ Image başarıyla build edildi: ${IMAGE_NAME}:${IMAGE_TAG}"
     }
     failure {
       echo "❌ Pipeline hata verdi."
