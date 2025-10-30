@@ -63,7 +63,7 @@ spec:
 
               /kaniko/executor \
                 --context $PWD \
-                --dockerfile spring-petclinic/Dockerfile \
+                --dockerfile ${PWD}/Dockerfile \
                 --destination ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} \
                 --skip-tls-verify \
                 --reproducible
