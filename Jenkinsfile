@@ -11,8 +11,6 @@ spec:
   containers:
     - name: kaniko
       image: gcr.io/kaniko-project/executor:latest
-      command:
-        - cat
       tty: true
       volumeMounts:
         - name: kaniko-secret
@@ -41,7 +39,6 @@ spec:
     stage('Set IMAGE_TAG') {
       steps {
         script {
-          // kısa git commit hash al
           IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
           echo "📦 IMAGE_TAG = ${IMAGE_TAG}"
         }
