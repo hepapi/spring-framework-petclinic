@@ -51,6 +51,7 @@ spec:
       steps {
         container('builder') {
           script {
+            sh 'git config --global --add safe.directory /home/jenkins/agent/workspace/cicd-pipeline'
             IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
             echo "📦 IMAGE_TAG = ${IMAGE_TAG}"
           }
