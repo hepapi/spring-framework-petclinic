@@ -13,7 +13,8 @@ spec:
       image: docker:27-dind
       securityContext:
         privileged: true
-      args: ["--insecure-registry=nexus.hepapi.com"]
+      args:
+        - --insecure-registry=my-nexus-repository-manager.nexus.svc.cluster.local:8082
     - name: builder
       image: docker:27-cli
       command:
