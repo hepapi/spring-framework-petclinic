@@ -30,6 +30,14 @@ spec:
   }
 
   stages {
+    stage('Checkout') {
+      steps {
+        container('builder') {
+          git branch: 'main', url: 'https://github.com/hepapi/spring-framework-petclinic.git'
+        }
+      }
+    }
+
     stage('Setup Docker') {
       steps {
         container('builder') {
