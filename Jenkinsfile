@@ -1,29 +1,5 @@
 pipeline {
-  agent {
-    kubernetes {
-      yaml """
-apiVersion: v1
-kind: Pod
-metadata:
-  name: kaniko-build-pod
-spec:
-  serviceAccountName: jenkins
-  containers:
-    - name: kaniko
-      image: gcr.io/kaniko-project/executor:latest
-      command:
-        - cat
-      tty: true
-      volumeMounts:
-        - name: kaniko-secret
-          mountPath: /kaniko/.docker/
-          readOnly: false
-  volumes:
-    - name: kaniko-secret
-      emptyDir: {}
-"""
-    }
-  }
+  agent any
 
   environment {
     IMAGE_NAME = "spring-petclinic"
@@ -33,9 +9,7 @@ spec:
   stages {
     stage('Checkout') {
       steps {
-        container('kaniko') {
-          git branch: 'main', url: 'https://github.com/hepapi/spring-framework-petclinic.git'
-        }
+        git branch: 'main', url: 'https://github.com/hepapi/spring-framework-petclinic.git'
       }
     }
 
@@ -50,28 +24,19 @@ spec:
 
     stage('Build JAR') {
       steps {
-        container('kaniko') {
-          sh './mvnw clean package -DskipTests'
-        }
+        sh './mvnw clean package -DskipTests'
       }
     }
 
-    stage('Build & Push Image (Kaniko)') {
+    stage('Build & Push Image') {
       steps {
-        container('kaniko') {
-          withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-            sh """
-              mkdir -p /kaniko/.docker
-              echo '{"auths":{"${REGISTRY}":{"username":"$USER","password":"$PASS"}}}' > /kaniko/.docker/config.json
+        withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+          sh """
+            echo "${PASS}" | docker login ${REGISTRY} -u "${USER}" --password-stdin
 
-              /kaniko/executor \
-                --context ${PWD} \
-                --dockerfile ${PWD}/Dockerfile \
-                --destination ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} \
-                --skip-tls-verify \
-                --reproducible
-            """
-          }
+            docker build -t ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
+            docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+          """
         }
       }
     }
