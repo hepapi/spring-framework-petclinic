@@ -78,7 +78,9 @@ spec:
         container('builder') {
           withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
             sh '''
-              echo "${PASS}" | docker login https://${REGISTRY} -u "${USER}" --password-stdin
+
+
+              echo "${PASS}" | docker login http://${REGISTRY} -u "${USER}" --password-stdin
               docker build -t ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
               docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
             '''
