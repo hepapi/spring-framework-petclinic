@@ -22,8 +22,8 @@ RUN mvn clean package -DskipTests
 # Runtime stage - Jetty ile çalıştırma
 FROM jetty:11-jdk17-eclipse-temurin
 
-# WAR dosyasını Jetty webapps dizinine kopyala
-COPY --from=build /app/target/*.war /var/lib/jetty/webapps/petclinic.war
+# WAR dosyasını ROOT olarak kopyala (root context için)
+COPY --from=build /app/target/*.war /var/lib/jetty/webapps/ROOT.war
 
 # Jetty'nin 8080 portunu expose et
 EXPOSE 8080
