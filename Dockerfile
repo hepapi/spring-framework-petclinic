@@ -1,17 +1,10 @@
-# Maven + JDK17 ile build aşaması
-FROM maven:3.9.9-eclipse-temurin-17 AS build
-
+FROM maven:3.8.6-openjdk-18 AS build
 WORKDIR /app
-COPY . .
-
-# Maven ile build (testleri atlıyoruz)
+COPY application/ .
 RUN mvn clean package -DskipTests
-RUN ls -la /app/target
 
-# Çalışma imajı
 FROM openjdk:17-jdk-slim
-
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
-
-CMD ["java", "-jar", "app.jar"]
+COPY --from=build /app/target/spring-petclinic-*.jar /app/spring-petclinic.jar
+ENTRYPOINT ["java", "-jar", "/app/spring-petclinic.jar"]
+EXPOSE 8080
