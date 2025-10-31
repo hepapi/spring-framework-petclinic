@@ -28,5 +28,8 @@ COPY --from=build /app/target/*.war /var/lib/jetty/webapps/ROOT.war
 # Jetty'nin 8080 portunu expose et
 EXPOSE 8080
 
+# Spring profile ayarla (JPA varsayılan)
+ENV SPRING_PROFILES_ACTIVE=jpa
+
 # Jetty'yi başlat
-CMD ["java", "-jar", "/usr/local/jetty/start.jar"]
+CMD ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}", "-jar", "/usr/local/jetty/start.jar"]
