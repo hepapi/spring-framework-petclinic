@@ -30,7 +30,7 @@ pipeline {
         sh '''
           IMAGE_TAG=$(git rev-parse --short HEAD)
           echo "📦 Building Docker image $IMAGE_TAG ..."
-          docker build -t $REGISTRY/$REPO_PATH/$IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
+          docker build -t $REGISTRY/$REPO_PATH/$IMAGE_NAME:$IMAGE_TAG .
         '''
       }
     }
