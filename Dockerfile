@@ -1,18 +1,32 @@
-# Temel imaj olarak, bir Java Web Sunucusu (Tomcat) ve Java 17 kullanan bir imaj seçelim.
-# Bu imaj, uygulamanın çalışması için gerekli Java ve sunucu ortamını sağlar.
-FROM tomcat:10.0.27-jdk17-temurin-focal
+# Multi-stage build için Maven ve JDK 17 kullanıyoruz
+FROM maven:3.9-eclipse-temurin-17 AS build
 
-# Uygulamanın .war dosyasını derleyip bu Dockerfile ile aynı dizine koyduğunuzu varsayalım.
-# Projeyi derlemek için: ./mvnw package
-# Derleme sonrası oluşan WAR dosyası genellikle 'target/spring-petclinic.war' yolundadır.
-ARG WAR_FILE=target/spring-petclinic.war
+# Çalışma dizinini ayarla
+WORKDIR /app
 
-# Derlenmiş WAR dosyasını Tomcat'in 'webapps' dizinine 'ROOT.war' adıyla kopyala.
-# 'ROOT.war' olarak adlandırmak, uygulamaya doğrudan '/' yolundan erişilmesini sağlar (yani http://localhost:8080/).
-COPY ${WAR_FILE} /usr/local/tomcat/webapps/ROOT.war
+# pom.xml ve Maven wrapper dosyalarını kopyala
+COPY pom.xml .
+COPY .mvn .mvn
+COPY mvnw .
+COPY mvnw.cmd .
 
-# Tomcat varsayılan olarak 8080 portunu kullanır.
+# Bağımlılıkları önce indir (cache optimizasyonu için)
+RUN mvn dependency:go-offline -B
+
+# Kaynak kodları kopyala
+COPY src ./src
+
+# Uygulamayı derle ve WAR dosyası oluştur
+RUN mvn clean package -DskipTests
+
+# Runtime stage - Jetty ile çalıştırma
+FROM jetty:11-jdk17-eclipse-temurin
+
+# WAR dosyasını Jetty webapps dizinine kopyala
+COPY --from=build /app/target/*.war /var/lib/jetty/webapps/petclinic.war
+
+# Jetty'nin 8080 portunu expose et
 EXPOSE 8080
 
-# Tomcat'in başlangıç komutu (Temel imajda zaten tanımlı olabilir, bu sadece netlik için).
-# CMD ["catalina.sh", "run"]
+# Jetty'yi başlat
+CMD ["java", "-jar", "/usr/local/jetty/start.jar"]
