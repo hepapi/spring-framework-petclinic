@@ -1,12 +1,13 @@
-# Build stage
-FROM maven:3.8.6-openjdk-17 AS build
+FROM maven:3.9.9-eclipse-temurin-17
+
 WORKDIR /app
 COPY . .
+
+# WAR dosyasını build et
 RUN mvn clean package -DskipTests
 
-# Runtime stage (Jetty)
-FROM maven:3.8.6-openjdk-17
-WORKDIR /app
-COPY . .
+# 8080 portunu aç
 EXPOSE 8080
+
+# Jetty ile uygulamayı ayağa kaldır
 CMD ["mvn", "jetty:run-war"]
