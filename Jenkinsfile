@@ -1,57 +1,64 @@
-pipeline {
-  agent any
+@Library('poc-env-micro-ci-lib') _
 
-  environment {
-    REGISTRY   = "my-nexus-repository-manager.nexus.svc.cluster.local:8082"
-    REPO_PATH  = "repository/nexusimagerepository"
-    IMAGE_NAME = "spring-petclinic"
+def SERVICE = 'spring-petclinic'
+def ENV = 'dev'
+
+pipeline {
+  agent {
+    kubernetes {
+      label 'k8s-agent-multi'
+    }
   }
 
   stages {
-    stage('Checkout') {
+
+    stage('Docker Build & Push') {
       steps {
-        git branch: 'main', url: 'https://github.com/hepapi/spring-framework-petclinic.git'
+        dockerBuildPush(
+          service: SERVICE,
+          environment: ENV,
+          gitRepo: 'https://github.com/hepapi/spring-framework-petclinic.git',
+          gitBranch: 'main',
+          dockerfileName: 'Dockerfile',
+          contextPath: "."
+        )
       }
     }
 
-    stage('Login to Nexus') {
+    stage('Static & Security Analysis') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'nexus-docker-creds', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-          sh '''
-            echo "🔐 Nexus login..."
-            echo "$PASS" | docker login $REGISTRY -u "$USER" --password-stdin
-          '''
-        }
+        securityScan(
+          sonar: 'enable',
+          conftest: 'enable',
+          trivy: 'enable'
+        )
       }
     }
 
-    stage('Build Docker Image') {
+    stage('Manual Approval') {
       steps {
-        sh '''
-          IMAGE_TAG=$(git rev-parse --short HEAD)
-          echo "📦 Building Docker image $IMAGE_TAG ..."
-          docker build -t $REGISTRY/$REPO_PATH/$IMAGE_NAME:$IMAGE_TAG .
-        '''
+        manualApproval(approval: 'enable')
       }
     }
 
-    stage('Push Docker Image to Nexus') {
+    stage('Helm Package & Push') {
       steps {
-        sh '''
-          IMAGE_TAG=$(git rev-parse --short HEAD)
-          echo "🚀 Pushing Docker image to Nexus..."
-          docker push $REGISTRY/$REPO_PATH/$IMAGE_NAME:$IMAGE_TAG
-        '''
+        helmPackagePush(
+          service: SERVICE,
+          environment: ENV,
+          helmValuesFile: "non-prod/${ENV}/${SERVICE}-values.yaml",
+          chartName: "${SERVICE}-${ENV}"
+        )
       }
     }
   }
 
   post {
     success {
-      echo "✅ Image başarıyla Nexus’a pushlandı!"
+      notifyStatus(status: 'success')
     }
     failure {
-      echo "❌ Pipeline hata verdi."
+      notifyStatus(status: 'failure')
     }
   }
 }
