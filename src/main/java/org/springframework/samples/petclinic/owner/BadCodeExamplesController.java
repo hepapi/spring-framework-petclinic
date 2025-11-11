@@ -8,6 +8,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.springframework.samples.petclinic.model.Owner;
+
 /**
  * Bu sınıf, SonarQube Quality Gate'ini test etmek için kasıtlı olarak
  * kötü kod pratikleri içermektedir.
