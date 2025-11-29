@@ -1,4 +1,4 @@
-# Stage 1: Build WAR using Maven-deneme-new-image
+# Stage 1: Build WAR using Maven-deneme-new-image-second
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 
