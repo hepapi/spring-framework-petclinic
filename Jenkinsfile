@@ -18,19 +18,16 @@ pipeline {
           service: SERVICE,
           environment: ENV,
           gitRepo: 'https://github.com/hepapi/spring-framework-petclinic.git',
-          gitBranch: 'main',
-          dockerfileName: 'Dockerfile',
-          contextPath: "."
         )
       }
     }
 
-    stage('Static & Security Analysis') {
+    stage('Security Scan') {
       steps {
         securityScan(
-          sonar: 'enable',
+          trivy: 'enable',
           conftest: 'enable',
-          trivy: 'enable'
+          sonar: 'enable'
         )
       }
     }
@@ -40,6 +37,7 @@ pipeline {
         manualApproval(approval: 'enable')
       }
     }
+
 
     stage('Helm Package & Push') {
       steps {
@@ -52,6 +50,7 @@ pipeline {
       }
     }
   }
+
 
   post {
     success {
