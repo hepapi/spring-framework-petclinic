@@ -1,13 +1,15 @@
 @Library('poc-env-micro-ci-lib') _
 
-def SERVICE = 'spring-petclinic'
-def ENV = 'dev'
-
 pipeline {
   agent {
     kubernetes {
       label 'k8s-agent-multi'
     }
+  }
+
+  environment {
+    SERVICE = 'spring-petclinic'
+    ENV     = 'dev'
   }
 
   stages {
@@ -17,7 +19,7 @@ pipeline {
         dockerBuildPush(
           service: SERVICE,
           environment: ENV,
-          gitRepo: 'https://github.com/hepapi/spring-framework-petclinic.git',
+          gitRepo: 'https://github.com/hepapi/spring-framework-petclinic.git'
         )
       }
     }
@@ -38,7 +40,6 @@ pipeline {
       }
     }
 
-
     stage('Helm Package & Push') {
       steps {
         helmPackagePush(
@@ -50,7 +51,6 @@ pipeline {
       }
     }
   }
-
 
   post {
     success {
