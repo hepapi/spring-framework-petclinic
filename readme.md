@@ -232,7 +232,7 @@ For pull requests, editor preferences are available in the [editor config](.edit
 
 Test trigger: ${CURRENT_TIME}
 
-- deneme satırı
+
 
 
 
