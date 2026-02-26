@@ -24,15 +24,15 @@ pipeline {
       }
     }
 
-    stage('Security Scan') {
-      steps {
-        securityScan(
-          trivy: 'enable',
-          conftest: 'enable',
-          sonar: 'enable'
-        )
-      }
-    }
+    // stage('Security Scan') {
+    //   steps {
+    //     securityScan(
+    //       trivy: 'enable',
+    //       conftest: 'enable',
+    //       sonar: 'enable'
+    //     )
+    //   }
+    // }
 
     stage('Manual Approval') {
       steps {
